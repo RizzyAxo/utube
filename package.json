@@ -1,0 +1,12 @@
+{
+  "name": "youtube-search-app",
+  "version": "1.0.0",
+  "description": "YouTube search application with Netlify serverless functions",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "yt-dlp-exec": "^1.0.0"
+  }
+} 

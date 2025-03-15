@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Search</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 0;
+            background-color: #f8f9fa;
+            text-align: center;
+        }
+        h3 {
+            margin-top: 20px;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 60%;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 15px;
+            font-size: 16px;
+            border: none;
+            background-color: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .video-grid {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            padding: 10px;
+        }
+        .video-item {
+            background: white;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 250px;
+        }
+        .video-item img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+        .video-item a {
+            text-decoration: none;
+            font-weight: bold;
+            color: #333;
+            display: block;
+            margin-top: 8px;
+        }
+        .video-item a:hover {
+            color: #007bff;
+        }
+        .channel-name {
+            font-size: 14px;
+            color: #555;
+        }
+        video {
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <form id="searchForm">
+        <input type="text" id="searchInput" placeholder="Search for YouTube videos" required>
+        <button type="submit">Search</button>
+    </form>
+
+    <div id="recommendedVideos">
+        <h3>Recommended Videos:</h3>
+        <div class="video-grid" id="recommendedGrid"></div>
+    </div>
+
+    <div id="searchResults" style="display: none;">
+        <h3>Search Results:</h3>
+        <div class="video-grid" id="searchGrid"></div>
+    </div>
+
+    <div id="video-player" style="display: none; margin-top: 20px;">
+        <video controls autoplay width="800">
+            <source id="video-source" src="" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+    </div>
+
+    <script>
+        // Load recommended videos on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('/api/recommended');
+                const data = await response.json();
+                if (data.success) {
+                    displayVideos(data.videos, 'recommendedGrid');
+                }
+            } catch (error) {
+                console.error('Error loading recommended videos:', error);
+            }
+        });
+
+        // Handle search form submission
+        document.getElementById('searchForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const query = document.getElementById('searchInput').value;
+            if (!query) return;
+
+            try {
+                const response = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('searchResults').style.display = 'block';
+                    displayVideos(data.videos, 'searchGrid');
+                }
+            } catch (error) {
+                console.error('Error searching videos:', error);
+            }
+        });
+
+        function displayVideos(videos, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = videos.map(video => `
+                <div class="video-item">
+                    <a href="#" data-url="${video.url}">
+                        <img src="${video.thumbnail}" alt="Thumbnail">
+                    </a>
+                    <a href="#" data-url="${video.url}">${video.title}</a>
+                    <div class="channel-name">${video.channel}</div>
+                </div>
+            `).join('');
+
+            // Add click handlers to video links
+            container.querySelectorAll('a[data-url]').forEach(link => {
+                link.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    const url = this.dataset.url;
+                    try {
+                        const response = await fetch(`/api/watch?url=${encodeURIComponent(url)}`);
+                        const data = await response.json();
+                        if (data.success) {
+                            const videoPlayer = document.getElementById('video-player');
+                            const videoSource = document.getElementById('video-source');
+                            videoPlayer.style.display = 'block';
+                            videoSource.src = data.url;
+                            videoSource.parentElement.load();
+                            videoPlayer.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    } catch (error) {
+                        console.error('Error loading video:', error);
+                    }
+                });
+            });
+        }
+    </script>
+</body>
+</html> 
